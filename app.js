@@ -6,7 +6,7 @@ const CATS=[
 ["Technická pomoc","#f79009","🛠️",["technická pomoc"]],
 ["Únik nebezpečných látek","#f79009","☢️",["únik nebezpečných látek","únik nl","nebezpečných látek"]],
 ["Voda / čerpání","#1570ef","💧",["voda","čerpání"]],
-["Ostatní","#12b76a","🌳",["ostatní"]]
+["Ostatní","#12b76a","🚨",["ostatní"]]
 ];
 let places=[], incidents=[], types=[], pending=null, edit=null, adding=false, markers=new Map();
 const map=L.map("map").setView([49.8175,15.473],7);
