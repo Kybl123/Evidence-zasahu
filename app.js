@@ -90,7 +90,7 @@ function openForm(inc=null,pid=null){
   $("jsdh").checked=inc?.jsdh??true;$("hzs").checked=inc?.hzs??false;$("alarm").value=inc?.alarm_level||"I.";
   $("placeHint").textContent=inc?"Místo zásahu zůstává stejné.":`Místo: ${pending.lat.toFixed(5)}, ${pending.lng.toFixed(5)}`;
   $("dlg").showModal();
-
+}
  function findNearbyPlace(lat, lng, maxMeters = 5){
   const R = 6371000;
 
