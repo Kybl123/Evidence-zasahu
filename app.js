@@ -82,19 +82,78 @@ function openForm(inc=null,pid=null){
   $("jsdh").checked=inc?.jsdh??true;$("hzs").checked=inc?.hzs??false;$("alarm").value=inc?.alarm_level||"I.";
   $("placeHint").textContent=inc?"Místo zásahu zůstává stejné.":`Místo: ${pending.lat.toFixed(5)}, ${pending.lng.toFixed(5)}`;
   $("dlg").showModal();
-}
+
+ function findNearbyPlace(lat, lng, maxMeters = 5){
+  const R = 6371000;
+
+  return places.find(p=>{
+    const dLat = (p.latitude - lat) * Math.PI / 180;
+    const dLng = (p.longitude - lng) * Math.PI / 180;
+
+    const a =
+      Math.sin(dLat/2) ** 2 +
+      Math.cos(lat * Math.PI / 180) *
+      Math.cos(p.latitude * Math.PI / 180) *
+      Math.sin(dLng/2) ** 2;
+
+    const distance = 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    return distance <= maxMeters;
+  });
+} 
 $("cancel").onclick=()=>{$("dlg").close();pending=null;edit=null};
 $("form").onsubmit=async e=>{
   e.preventDefault(); const {data:{user}}=await sb.auth.getUser(); if(!user)return;
   const payload={type:$("type").value.trim(),incident_date:$("date").value,description:$("desc").value.trim(),jsdh:$("jsdh").checked,hzs:$("hzs").checked,alarm_level:$("alarm").value};
   if(!payload.type)return alert("Vyplň typ zásahu.");
-  let pid=edit?.place_id;
-  if(edit){
-    const {error}=await sb.from("incidents").update(payload).eq("id",edit.id); if(error)return alert(error.message);
+ let pid=edit?.place_id;
+
+if(edit){
+  const {error}=await sb
+    .from("incidents")
+    .update(payload)
+    .eq("id",edit.id);
+
+  if(error)return alert(error.message);
+
+}else{
+
+  // Najdeme existující místo maximálně 5 metrů od kliknutí
+  const nearby=findNearbyPlace(pending.lat,pending.lng,5);
+
+  if(nearby){
+
+    // Místo už existuje → použijeme jeho ID
+    pid=nearby.id;
+
   }else{
-    const {data:p,error:pe}=await sb.from("places").insert({user_id:user.id,latitude:pending.lat,longitude:pending.lng}).select().single();
-    if(pe)return alert(pe.message); pid=p.id;
-    const {error}=await sb.from("incidents").insert({...payload,place_id:pid,user_id:user.id}); if(error)return alert(error.message);
+
+    // Žádné místo do 5 metrů → vytvoříme nové
+    const {data:p,error:pe}=await sb
+      .from("places")
+      .insert({
+        user_id:user.id,
+        latitude:pending.lat,
+        longitude:pending.lng
+      })
+      .select()
+      .single();
+
+    if(pe)return alert(pe.message);
+
+    pid=p.id;
+  }
+
+  // Přidáme zásah k existujícímu nebo novému místu
+  const {error}=await sb
+    .from("incidents")
+    .insert({
+      ...payload,
+      place_id:pid,
+      user_id:user.id
+    });
+
+  if(error)return alert(error.message);
   }
   if(!types.includes(payload.type)){await sb.from("incident_types").insert({user_id:user.id,name:payload.type});}
   $("dlg").close(); pending=null; edit=null; await loadData(); showPlace(pid);
