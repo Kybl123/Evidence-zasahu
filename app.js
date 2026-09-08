@@ -9,8 +9,16 @@ const CATS=[
 ["Ostatní","#12b76a","🚨",["ostatní"]]
 ];
 let places=[], incidents=[], types=[], pending=null, edit=null, adding=false, markers=new Map();
-const map=L.map("map").setView([49.8175,15.473],7);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"&copy; OpenStreetMap contributors"}).addTo(map);
+const map=L.map("map",{
+  maxBounds:[[48.55,12.05],[51.10,18.90]],
+  maxBoundsViscosity:1.0,
+  minZoom:7
+}).setView([49.8175,15.473],7);
+
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
+  maxZoom:19,
+  attribution:"&copy; OpenStreetMap contributors"
+}).addTo(map);
 
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
