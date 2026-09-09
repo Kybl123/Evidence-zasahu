@@ -208,17 +208,33 @@ async function startApp(session){
 
   resetSide();
 
-  // Po zobrazení aplikace přepočítáme velikost mapy
-  setTimeout(() => {
-    map.invalidateSize(true);
-  }, 100);
+  // Nejdřív aplikaci skutečně zobrazíme
+$("login").hidden = true;
+$("app").hidden = false;
+$("appTools").hidden = false;
+$("userEmail").textContent = session.user.email || "";
 
-  await loadData();
+resetSide();
 
-  // Ještě jednou po načtení dat a markerů
-  setTimeout(() => {
-    map.invalidateSize(true);
-  }, 300);
+// Leaflet byl vytvořen ještě v době, kdy byla mapa skrytá.
+// Proto její velikost přepočítáme až po vykreslení stránky.
+requestAnimationFrame(() => {
+  map.invalidateSize();
+
+  requestAnimationFrame(() => {
+    map.invalidateSize();
+
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 500);
+  });
+});
+
+await loadData();
+
+setTimeout(() => {
+  map.invalidateSize();
+}, 800);
 }
 async function init(){
   const {data:{session}}=await sb.auth.getSession();
