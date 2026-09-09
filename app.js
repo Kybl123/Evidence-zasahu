@@ -104,8 +104,10 @@ function renderMarkers(){
       el.style.cursor="pointer";
     }
 
-    group.forEach(p=>markers.set(p.id,m));
+   group.forEach(p=>markers.set(p.id,m));
+  }
 }
+
 function showPlace(pid){
   const p=places.find(x=>x.id===pid);
   if(!p)return;
