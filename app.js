@@ -32,10 +32,21 @@ function markerIcon(p){
   return L.divIcon({className:"",html:`<div class="marker" style="background:${c[1]}">${c[2]}<span class="count">${list.length}</span></div>`,iconSize:[34,34],iconAnchor:[17,17]});
 }
 function renderMarkers(){
-  markers.forEach(m=>m.remove()); markers.clear();
+  markers.forEach(m=>m.remove());
+  markers.clear();
+
   places.forEach(p=>{
-    const m=L.marker([p.latitude,p.longitude],{icon:markerIcon(p)}).addTo(map);
-    m.on("click",()=>showPlace(p.id)); markers.set(p.id,m);
+    const m=L.marker(
+      [p.latitude,p.longitude],
+      {icon:markerIcon(p)}
+    ).addTo(map);
+
+    m.on("click",e=>{
+      L.DomEvent.stopPropagation(e);
+      showPlace(p.id);
+    });
+
+    markers.set(p.id,m);
   });
 }
 function showPlace(pid){
