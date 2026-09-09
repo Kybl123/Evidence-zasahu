@@ -78,7 +78,6 @@ function markerIcon(group){
     iconAnchor:[17,17]
   });
 }
-
 function renderMarkers(){
   markers.forEach(m=>m.remove());
   markers.clear();
@@ -88,18 +87,25 @@ function renderMarkers(){
 
     const m=L.marker(
       [center.latitude,center.longitude],
-      {icon:markerIcon(group)}
+      {
+        icon:markerIcon(group),
+        interactive:true,
+        keyboard:false
+      }
     ).addTo(map);
 
-    m.on("click",e=>{
-      L.DomEvent.stopPropagation(e);
+    m.on("click",function(){
       showPlaceGroup(group);
     });
 
-    group.forEach(p=>markers.set(p.id,m));
-  }
-}
+    const el=m.getElement();
+    if(el){
+      el.style.pointerEvents="auto";
+      el.style.cursor="pointer";
+    }
 
+    group.forEach(p=>markers.set(p.id,m));
+}
 function showPlace(pid){
   const p=places.find(x=>x.id===pid);
   if(!p)return;
