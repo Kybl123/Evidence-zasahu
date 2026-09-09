@@ -53,6 +53,8 @@ function renderMarkers(){
   });
 }
 function showPlace(pid){
+  console.log("KLIK NA ZÁSAH:", pid);
+  const p=places.find(x=>x.id===pid); if(!p)return;
   const p=places.find(x=>x.id===pid); if(!p)return;
   const arr=incidents.filter(i=>i.place_id===pid).sort((a,b)=>b.incident_date.localeCompare(a.incident_date));
   const c=cat(arr[0]?.type); $("side").className="panel";
