@@ -47,7 +47,6 @@ function renderMarkers(){
 }
 function showPlace(pid){
   const p=places.find(x=>x.id===pid); if(!p)return;
-  const p=places.find(x=>x.id===pid); if(!p)return;
   const arr=incidents.filter(i=>i.place_id===pid).sort((a,b)=>b.incident_date.localeCompare(a.incident_date));
   const c=cat(arr[0]?.type); $("side").className="panel";
   $("side").innerHTML=`<div class="head"><div class="ico" style="background:${c[1]}">${c[2]}</div><div><h2>${esc(arr[0]?.type)}</h2><div>${arr.length} zásah${arr.length===1?"":"ů"} na tomto místě</div></div></div>
