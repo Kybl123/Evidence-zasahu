@@ -26,33 +26,100 @@ const cat=type=>{const t=(type||"").toLowerCase();return CATS.find(c=>c[3].some(
 const today=()=>new Date().toISOString().slice(0,10);
 
 function resetSide(){ $("side").className="empty"; $("side").innerHTML='<b>📍</b><h2>Vyber zásah</h2><p>Pro přidání klikni na „Přidat zásah“ a potom na místo v mapě.</p>'; }
-function markerIcon(p){
-  const list=incidents.filter(i=>i.place_id===p.id).sort((a,b)=>b.incident_date.localeCompare(a.incident_date));
-  const c=cat(list[0]?.type);
-  return L.divIcon({className:"",html:`<div class="marker" style="background:${c[1]}">${c[2]}<span class="count">${list.length}</span></div>`,iconSize:[34,34],iconAnchor:[17,17]});
+function distanceMeters(a,b){
+  const R=6371000;
+  const dLat=(b.latitude-a.latitude)*Math.PI/180;
+  const dLng=(b.longitude-a.longitude)*Math.PI/180;
+  const x=Math.sin(dLat/2)**2+
+    Math.cos(a.latitude*Math.PI/180)*
+    Math.cos(b.latitude*Math.PI/180)*
+    Math.sin(dLng/2)**2;
+  return 2*R*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
-function renderMarkers(){
-  markers.forEach(m=>m.remove()); 
-  markers.clear();
 
-  places.forEach(p=>{
-    const m=L.marker(
-      [p.latitude,p.longitude],
-      {icon:markerIcon(p)}
-    ).addTo(map);
+function getPlaceGroups(){
+  const groups=[];
+  const used=new Set();
 
-    m.on("click",()=>showPlace(p.id)); 
-    markers.set(p.id,m);
+  for(const p of places){
+    if(used.has(p.id))continue;
+
+    const group=[p];
+    used.add(p.id);
+
+    for(const q of places){
+      if(used.has(q.id))continue;
+
+      if(distanceMeters(p,q)<=5){
+        group.push(q);
+        used.add(q.id);
+      }
+    }
+
+    groups.push(group);
+  }
+
+  return groups;
+}
+
+function markerIcon(group){
+  const ids=new Set(group.map(p=>p.id));
+
+  const list=incidents
+    .filter(i=>ids.has(i.place_id))
+    .sort((a,b)=>b.incident_date.localeCompare(a.incident_date));
+
+  const c=cat(list[0]?.type);
+
+  return L.divIcon({
+    className:"",
+    html:`<div class="marker" style="background:${c[1]}">${c[2]}<span class="count">${list.length}</span></div>`,
+    iconSize:[34,34],
+    iconAnchor:[17,17]
   });
 }
+
+function renderMarkers(){
+  markers.forEach(m=>m.remove());
+  markers.clear();
+
+  for(const group of getPlaceGroups()){
+    const center=group[0];
+
+    const m=L.marker(
+      [center.latitude,center.longitude],
+      {icon:markerIcon(group)}
+    ).addTo(map);
+
+    m.on("click",e=>{
+      L.DomEvent.stopPropagation(e);
+      showPlaceGroup(group);
+    });
+
+    group.forEach(p=>markers.set(p.id,m));
+  }
+}
+
 function showPlace(pid){
-  const p=places.find(x=>x.id===pid); if(!p)return;
-  const arr=incidents.filter(i=>i.place_id===pid).sort((a,b)=>b.incident_date.localeCompare(a.incident_date));
+  const p=places.find(x=>x.id===pid);
+  if(!p)return;
+
+  showPlaceGroup([p]);
+}
+
+function showPlaceGroup(group){
+  if(!group.length)return;
+
+  const ids=new Set(group.map(p=>p.id));
+
+  const arr=incidents
+    .filter(i=>ids.has(i.place_id))
+    .sort((a,b)=>b.incident_date.localeCompare(a.incident_date));
   const c=cat(arr[0]?.type); $("side").className="panel";
   $("side").innerHTML=`<div class="head"><div class="ico" style="background:${c[1]}">${c[2]}</div><div><h2>${esc(arr[0]?.type)}</h2><div>${arr.length} zásah${arr.length===1?"":"ů"} na tomto místě</div></div></div>
   <div class="meta"><b>Souřadnice</b><span>${p.latitude.toFixed(5)}, ${p.longitude.toFixed(5)}</span></div><h3>Zásahy</h3>
   ${arr.map(i=>`<div class="record"><div class="recordtop"><strong>${esc(i.incident_date)}</strong><span>${esc(i.alarm_level)}</span></div><div><b>${esc(i.type)}</b></div><div>${esc(i.description||"Bez popisu")}</div><div style="font-size:13px;color:#667085;margin-top:7px">${i.jsdh?"☑":"☐"} JSDH &nbsp; ${i.hzs?"☑":"☐"} HZS</div><div class="actions"><button class="edit" onclick="editIncident('${i.id}')">✏️ Upravit</button><button class="danger" onclick="deleteIncident('${i.id}')">🗑️ Smazat</button></div></div>`).join("")}
-  <div class="actions"><button class="primary" onclick="addTo('${pid}')">＋ Přidat zásah sem</button><button onclick="deletePlace('${pid}')">Smazat místo</button></div>`;
+  <div class="actions"><button class="primary" onclick="addTo('${pid}')">＋ Přidat zásah sem</button>${group.length===1?`<button onclick="deletePlace('${primary.id}')">Smazat místo</button>`:""}</div>`;
 }
 async function loadData(){
   const {data:{user}}=await sb.auth.getUser(); if(!user)return;
@@ -98,23 +165,22 @@ function openForm(inc=null,pid=null){
   $("placeHint").textContent=inc?"Místo zásahu zůstává stejné.":`Místo: ${pending.lat.toFixed(5)}, ${pending.lng.toFixed(5)}`;
   $("dlg").showModal();
 }
- function findNearbyPlace(lat, lng, maxMeters = 5){
-  const R = 6371000;
+function findNearbyPlace(lat,lng,maxMeters=5){
+  const point={latitude:lat,longitude:lng};
 
-  return places.find(p=>{
-    const dLat = (p.latitude - lat) * Math.PI / 180;
-    const dLng = (p.longitude - lng) * Math.PI / 180;
+  let nearest=null;
+  let nearestDistance=Infinity;
 
-    const a =
-      Math.sin(dLat/2) ** 2 +
-      Math.cos(lat * Math.PI / 180) *
-      Math.cos(p.latitude * Math.PI / 180) *
-      Math.sin(dLng/2) ** 2;
+  for(const p of places){
+    const d=distanceMeters(point,p);
 
-    const distance = 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    if(d<=maxMeters && d<nearestDistance){
+      nearest=p;
+      nearestDistance=d;
+    }
+  }
 
-    return distance <= maxMeters;
-  });
+  return nearest;
 } 
 $("cancel").onclick=()=>{$("dlg").close();pending=null;edit=null};
 $("form").onsubmit=async e=>{
