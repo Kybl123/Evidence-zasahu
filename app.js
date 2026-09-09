@@ -361,10 +361,91 @@ $("restore").onchange=async e=>{
   }catch(err){alert("Import se nepodařil: "+(err.message||err))}
   e.target.value="";
 };
+function renderStats(year){
+  const y=String(year);
+
+  const a=incidents.filter(i=>
+    i.incident_date &&
+    i.incident_date.startsWith(y)
+  );
+
+  const by={};
+
+  a.forEach(i=>{
+    by[i.type]=(by[i.type]||0)+1;
+  });
+
+  const years=[];
+
+  for(let i=2025;i<=2035;i++){
+    years.push(i);
+  }
+
+  $("statsBody").innerHTML=`
+    <h2>📊 Roční přehled</h2>
+
+    <label style="display:block;margin-bottom:18px">
+      <b>Rok</b>
+      <select id="statsYear" style="margin-left:8px;padding:7px 10px">
+        ${years.map(r=>
+          `<option value="${r}" ${r===Number(year)?"selected":""}>${r}</option>`
+        ).join("")}
+      </select>
+    </label>
+
+    <div class="stats">
+      <div class="stat">
+        Celkem
+        <strong>${a.length}</strong>
+      </div>
+
+      <div class="stat">
+        JSDH
+        <strong>${a.filter(i=>i.jsdh).length}</strong>
+      </div>
+
+      <div class="stat">
+        HZS
+        <strong>${a.filter(i=>i.hzs).length}</strong>
+      </div>
+
+      <div class="stat">
+        Místa
+        <strong>${new Set(a.map(i=>i.place_id)).size}</strong>
+      </div>
+    </div>
+
+    <h3>Typy zásahů</h3>
+
+    ${
+      Object.entries(by)
+        .sort((a,b)=>b[1]-a[1])
+        .map(([k,v])=>
+          `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee">
+            <span>${esc(k)}</span>
+            <b>${v}</b>
+          </div>`
+        )
+        .join("")
+      ||
+      "<p>Žádné zásahy v tomto roce.</p>"
+    }
+  `;
+
+  $("statsYear").onchange=()=>{
+    renderStats($("statsYear").value);
+  };
+}
+
 $("statsBtn").onclick=()=>{
-  const y=String(new Date().getFullYear()),a=incidents.filter(i=>i.incident_date.startsWith(y)),by={};
-  a.forEach(i=>by[i.type]=(by[i.type]||0)+1);
-  $("statsBody").innerHTML=`<h2>📊 Roční přehled ${y}</h2><div class="stats"><div class="stat">Celkem<strong>${a.length}</strong></div><div class="stat">JSDH<strong>${a.filter(i=>i.jsdh).length}</strong></div><div class="stat">HZS<strong>${a.filter(i=>i.hzs).length}</strong></div><div class="stat">Místa<strong>${new Set(a.map(i=>i.place_id)).size}</strong></div></div><h3>Typy zásahů</h3>${Object.entries(by).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee"><span>${esc(k)}</span><b>${v}</b></div>`).join("")||"<p>Žádné zásahy v tomto roce.</p>"}`;
+  const currentYear=new Date().getFullYear();
+
+  renderStats(
+    currentYear>=2025 && currentYear<=2035
+      ? currentYear
+      : 2025
+  );
+
   $("statsDlg").showModal();
 };
 $("closeStats").onclick=()=>$("statsDlg").close();
