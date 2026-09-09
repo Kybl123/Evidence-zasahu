@@ -37,9 +37,12 @@ function renderMarkers(){
 
   places.forEach(p=>{
     const m=L.marker(
-      [p.latitude,p.longitude],
-      {icon:markerIcon(p)}
-    ).addTo(map);
+  [p.latitude,p.longitude],
+  {
+    icon:markerIcon(p),
+    bubblingMouseEvents:false
+  }
+).addTo(map);
 
     m.on("click",e=>{
       L.DomEvent.stopPropagation(e);
