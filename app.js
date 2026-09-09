@@ -353,7 +353,7 @@ $("statsBtn").onclick=()=>{
 };
 $("closeStats").onclick=()=>$("statsDlg").close();
 init();
-}
+
 window.addEventListener("resize", () => {
   map.invalidateSize();
 });
