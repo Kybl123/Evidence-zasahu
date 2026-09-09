@@ -106,7 +106,6 @@ function showPlace(pid){
 
   showPlaceGroup([p]);
 }
-
 function showPlaceGroup(group){
   if(!group.length)return;
 
@@ -115,11 +114,16 @@ function showPlaceGroup(group){
   const arr=incidents
     .filter(i=>ids.has(i.place_id))
     .sort((a,b)=>b.incident_date.localeCompare(a.incident_date));
-  const c=cat(arr[0]?.type); $("side").className="panel";
-  $("side").innerHTML=`<div class="head"><div class="ico" style="background:${c[1]}">${c[2]}</div><div><h2>${esc(arr[0]?.type)}</h2><div>${arr.length} zásah${arr.length===1?"":"ů"} na tomto místě</div></div></div>
-  <div class="meta"><b>Souřadnice</b><span>${p.latitude.toFixed(5)}, ${p.longitude.toFixed(5)}</span></div><h3>Zásahy</h3>
-  ${arr.map(i=>`<div class="record"><div class="recordtop"><strong>${esc(i.incident_date)}</strong><span>${esc(i.alarm_level)}</span></div><div><b>${esc(i.type)}</b></div><div>${esc(i.description||"Bez popisu")}</div><div style="font-size:13px;color:#667085;margin-top:7px">${i.jsdh?"☑":"☐"} JSDH &nbsp; ${i.hzs?"☑":"☐"} HZS</div><div class="actions"><button class="edit" onclick="editIncident('${i.id}')">✏️ Upravit</button><button class="danger" onclick="deleteIncident('${i.id}')">🗑️ Smazat</button></div></div>`).join("")}
-  <div class="actions"><button class="primary" onclick="addTo('${pid}')">＋ Přidat zásah sem</button>${group.length===1?`<button onclick="deletePlace('${primary.id}')">Smazat místo</button>`:""}</div>`;
+
+  const c=cat(arr[0]?.type);
+  const primary=group[0];
+
+  $("side").className="panel";
+
+  $("side").innerHTML=`<div class="head"><div class="ico" style="background:${c[1]}">${c[2]}</div><div><h2>${esc(arr[0]?.type||"Zásahy")}</h2><div>${arr.length} zásah${arr.length===1?"":"ů"} na tomto místě</div></div></div>
+  <div class="meta"><b>Souřadnice</b><span>${primary.latitude.toFixed(5)}, ${primary.longitude.toFixed(5)}</span></div><h3>Zásahy</h3>
+  ${arr.map(i=>`<div class="record"><div class="recordtop"><strong>${esc(i.incident_date)}</strong><span>${esc(i.alarm_level)}</span></div><div><b>${esc(i.type)}</b></div><div>${esc(i.description||"Bez popisu")}</div><div style="font-size:13px;color:#667085;margin-top:7px">${i.jsdh?"☑":"☐"} JSDH &nbsp; ${i.hzs?"☑":"☐"} HZS</div><div class="actions"><button class="edit" onclick="editIncident('${i.id}')">✏️ Upravit</button><button class="danger" onclick="deleteIncident('${i.id}')">🗑️ Smazat</button></div></div>`).join("")||"<p>Na tomto místě zatím není žádný zásah.</p>"}
+  <div class="actions"><button class="primary" onclick="addTo('${primary.id}')">＋ Přidat zásah sem</button>${group.length===1?`<button onclick="deletePlace('${primary.id}')">Smazat místo</button>`:""}</div>`;
 }
 async function loadData(){
   const {data:{user}}=await sb.auth.getUser(); if(!user)return;
