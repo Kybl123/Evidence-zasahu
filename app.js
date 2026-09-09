@@ -201,8 +201,24 @@ async function loadData(){
   renderMarkers();
 }
 async function startApp(session){
-  $("login").hidden=true; $("app").hidden=false; $("appTools").hidden=false; $("userEmail").textContent=session.user.email||"";
-  resetSide(); await loadData();
+  $("login").hidden=true;
+  $("app").hidden=false;
+  $("appTools").hidden=false;
+  $("userEmail").textContent=session.user.email||"";
+
+  resetSide();
+
+  // Po zobrazení aplikace přepočítáme velikost mapy
+  setTimeout(() => {
+    map.invalidateSize(true);
+  }, 100);
+
+  await loadData();
+
+  // Ještě jednou po načtení dat a markerů
+  setTimeout(() => {
+    map.invalidateSize(true);
+  }, 300);
 }
 async function init(){
   const {data:{session}}=await sb.auth.getSession();
@@ -337,3 +353,7 @@ $("statsBtn").onclick=()=>{
 };
 $("closeStats").onclick=()=>$("statsDlg").close();
 init();
+}
+window.addEventListener("resize", () => {
+  map.invalidateSize();
+});
